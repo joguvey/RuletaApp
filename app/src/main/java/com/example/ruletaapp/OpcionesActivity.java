@@ -41,7 +41,6 @@ public class OpcionesActivity extends AppCompatActivity {
 
         prefsMusica = getSharedPreferences(PREFS_MUSICA, MODE_PRIVATE);
         prefsVfx = getSharedPreferences(PREFS_VFX, MODE_PRIVATE);
-
         seekBarMusica = findViewById(R.id.seekBarMusica);
         txtVolum = findViewById(R.id.txtVolum);
         seekBarVfx = findViewById(R.id.seekBarVfx);

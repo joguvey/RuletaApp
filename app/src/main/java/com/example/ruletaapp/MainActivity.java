@@ -1,11 +1,14 @@
 package com.example.ruletaapp;
 
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -16,11 +19,15 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-
 import java.util.Random;
+//importem notificacions
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import androidx.core.app.NotificationCompat;
+//aquest import permet fer automaticament fora a l'usuari cap al menu
+import android.os.Handler;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,15 +41,27 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
     private MediaPlayer mediaPlayerClick;
     private MediaPlayer mediaPlayerResultat; //reproductor per sons de resultat (guanyar o perdre)
-
+    private static final int LIMIT_VICTORIA = 100;
     private final String[] sectors = {
-            "+1", "-2", "*2", "/2", "+3", "-1", "*3", "-3"
+            //"*1", "*2", "*2", "*2", "*3", "*1", "*3", "*3" //valors ruleta per guanyar rapid
+            //"-1", "-2", "/2", "/2", "-3", "-1", "-3", "-3" //valors ruleta per perdre rapid
+            "+1", "-2", "*2", "/2", "+3", "-1", "*3", "-3"  // valors normals
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //aqui ens assegurem que depenent la versio
+        //del mobil usuari, demanem permis per fer que surti NOTIFICACIO
+
         setContentView(R.layout.activity_main);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
+            }
+        }
 
         MonedaDao monedaDao = new MonedaDao(this);
 
@@ -101,7 +120,6 @@ public class MainActivity extends AppCompatActivity {
                     Animation.RELATIVE_TO_SELF, 0.5f,
                     Animation.RELATIVE_TO_SELF, 0.5f
             );
-
             SharedPreferences prefsVfx = getSharedPreferences("audio_settings", MODE_PRIVATE);
             float volumVfx = prefsVfx.getInt("volum_vfx", 100) / 100f;
 
@@ -140,7 +158,6 @@ public class MainActivity extends AppCompatActivity {
                     monedesText.setText("Monedes: " + monedes);
 
                     //cridem el so segons el que surti, la funcio esta fora al main
-
                     SharedPreferences prefsVfx = getSharedPreferences("audio_settings", MODE_PRIVATE);
                     float volumVfx = prefsVfx.getInt("volum_vfx", 100) / 100f;
 
@@ -150,21 +167,56 @@ public class MainActivity extends AppCompatActivity {
                         playResultSound(R.raw.monedaperduda1, volumVfx);
                     }
 
+
                     //text del que ha surt de les monedes
                     Toast.makeText(MainActivity.this,
                             "Has tocat: " + accio + " → Monedes: " + monedes,
                             Toast.LENGTH_SHORT).show();
 
+                    if (monedes >= LIMIT_VICTORIA) {
+                        mostrarNotificacio("Has guanyat!!!", "El teu rècord és de " + monedes + " monedes 🏆");
+                        monedaDao.inserirPartida(monedes);
+                        spinButton.setEnabled(false);
+                        spinButton.setAlpha(0.5f);
+                        // aixo torna al menu principal
+                        new Handler().postDelayed(() -> {
+                            // No tornem a inserir la partida aquí
+                            findViewById(R.id.menuLayout).setVisibility(View.VISIBLE);
+                            monedesText.setVisibility(View.GONE);
+                            spinButton.setVisibility(View.GONE);
+                            findViewById(R.id.ruletaContainer).setVisibility(View.GONE);
+                            findViewById(R.id.btnRetirar).setVisibility(View.GONE);
+                            monedaImage.setVisibility(View.GONE);
+
+                            monedes = 5;
+                            monedesText.setText("Monedes: " + monedes);
+                            spinButton.setEnabled(true);
+                            spinButton.setAlpha(1f);
+                        }, 2500);
+
+                    }
+
                     if (monedes <= 0) {
                         monedaDao.inserirPartida(monedes);
                         spinButton.setEnabled(false);
                         spinButton.setAlpha(0.5f);
-                        new AlertDialog.Builder(MainActivity.this)
-                                .setTitle("Game Over")
-                                .setMessage("T'has quedat sense monedes!")
-                                .setCancelable(false)
-                                .setPositiveButton("Sortir", (dialog, which) -> finish())
-                                .show();
+
+                        mostrarNotificacio("Game Over", "T'has quedat sense monedes 💀");
+
+                        // tornem al menu 3 segons (per donar temps a veure el resultat)
+                        new Handler().postDelayed(() -> {
+                            findViewById(R.id.menuLayout).setVisibility(View.VISIBLE);
+                            monedesText.setVisibility(View.GONE);
+                            spinButton.setVisibility(View.GONE);
+                            findViewById(R.id.ruletaContainer).setVisibility(View.GONE);
+                            findViewById(R.id.btnRetirar).setVisibility(View.GONE);
+                            monedaImage.setVisibility(View.GONE);
+
+                            monedes = 5;
+                            monedesText.setText("Monedes: " + monedes);
+                            spinButton.setEnabled(true);
+                            spinButton.setAlpha(1f);
+                        }, 3000);
                     }
 
                     if (mediaPlayerClick != null) {
@@ -214,6 +266,36 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    //notificacions
+    private void mostrarNotificacio(String titol, String missatge) {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        String canalId = "canal_ruleta";
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            NotificationChannel canal = new NotificationChannel(
+                    canalId,
+                    "Notificacions Ruleta",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            notificationManager.createNotificationChannel(canal);
+        }
+
+        // Intent per tornar al menú (MainActivity)
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalId)
+                .setSmallIcon(R.drawable.ic_launcher_foreground) // posa una icona millor si vols
+                .setContentTitle(titol)
+                .setContentText(missatge)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent); // Aquí!
+
+        notificationManager.notify(new Random().nextInt(), builder.build());
     }
 
     private void reproduirMusicaAmbVolum() {
