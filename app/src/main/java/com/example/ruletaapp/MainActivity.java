@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private Button spinButton;
     private MediaPlayer mediaPlayer;
     private MediaPlayer mediaPlayerClick;
+    private MediaPlayer mediaPlayerResultat; //reproductor per sons de resultat (guanyar o perdre)
 
     private final String[] sectors = {
             "+1", "-2", "*2", "/2", "+3", "-1", "*3", "-3"
@@ -137,6 +138,19 @@ public class MainActivity extends AppCompatActivity {
 
                     monedes = aplicarAccio(monedes, accio);
                     monedesText.setText("Monedes: " + monedes);
+
+                    //cridem el so segons el que surti, la funcio esta fora al main
+
+                    SharedPreferences prefsVfx = getSharedPreferences("audio_settings", MODE_PRIVATE);
+                    float volumVfx = prefsVfx.getInt("volum_vfx", 100) / 100f;
+
+                    if (accio.contains("+") || accio.contains("*")) {
+                        playResultSound(R.raw.monedaguanyada1, volumVfx);
+                    } else if (accio.contains("-") || accio.contains("/")) {
+                        playResultSound(R.raw.monedaperduda1, volumVfx);
+                    }
+
+                    //text del que ha surt de les monedes
                     Toast.makeText(MainActivity.this,
                             "Has tocat: " + accio + " → Monedes: " + monedes,
                             Toast.LENGTH_SHORT).show();
@@ -171,6 +185,35 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         reproduirMusicaAmbVolum();  // Torna a llegir la configuració del volum
+    }
+
+    //reproduccio del so
+    private void playResultSound(int soundResId, float volume) {
+        if (mediaPlayerResultat != null) {
+            mediaPlayerResultat.release();
+            mediaPlayerResultat = null;
+        }
+
+        try {
+            AssetFileDescriptor afd = getResources().openRawResourceFd(soundResId);
+            if (afd != null) {
+                mediaPlayerResultat = new MediaPlayer();
+                mediaPlayerResultat.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                afd.close();
+                mediaPlayerResultat.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                mediaPlayerResultat.setLooping(false);
+                mediaPlayerResultat.prepare();
+                mediaPlayerResultat.setVolume(volume, volume);
+                mediaPlayerResultat.start();
+
+                mediaPlayerResultat.setOnCompletionListener(mp -> {
+                    mp.release();
+                    mediaPlayerResultat = null;
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void reproduirMusicaAmbVolum() {
