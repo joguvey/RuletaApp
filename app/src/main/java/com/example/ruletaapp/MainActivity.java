@@ -1,4 +1,7 @@
 package com.example.ruletaapp;
+
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,6 +12,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.CalendarContract;
 import android.util.Log;
 import android.view.View;
@@ -19,15 +23,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-//import androidx.appcompat.app.AlertDialog;
+
 import androidx.appcompat.app.AppCompatActivity;
-import java.util.Random;
-//importem notificacions
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import androidx.core.app.NotificationCompat;
-//aquest import permet fer automaticament fora a l'usuari cap al menu
-import android.os.Handler;
+
+import com.example.ruletaapp.MusicManager;
+
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,24 +40,39 @@ public class MainActivity extends AppCompatActivity {
     private int monedes = 5;
     private TextView monedesText;
     private Button spinButton;
-    private MediaPlayer mediaPlayer;
     private MediaPlayer mediaPlayerClick;
-    private MediaPlayer mediaPlayerResultat; //reproductor per sons de resultat (guanyar o perdre)
-    private static final int LIMIT_VICTORIA = 6;
+    private MediaPlayer mediaPlayerResultat;
+    private static final int LIMIT_VICTORIA = 100;
     private final String[] sectors = {
-            //"*1", "*2", "*2", "*2", "*3", "*1", "*3", "*3" //valors ruleta per guanyar rapid
-            //"-1", "-2", "/2", "/2", "-3", "-1", "-3", "-3" //valors ruleta per perdre rapid
-            "+1", "-2", "*2", "/2", "+3", "-1", "*3", "-3"  // valors normals
+            "+1", "-2", "*2", "/2", "+3", "-1", "*3", "-3"
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //aqui ens assegurem que depenent la versio
-        //del mobil usuari, demanem permis per fer que surti NOTIFICACIO
+
+        // Comprovem si podem accedir a la música personalitzada
+        SharedPreferences prefsMusica = getSharedPreferences("configuracio_joc", MODE_PRIVATE);
+        String musicaUri = prefsMusica.getString("musica_personalitzada", "");
+        int volumMusica = prefsMusica.getInt("volum_musica", 100);
+        float volum = volumMusica / 100f;
+        Uri uri = null;
+
+        if (musicaUri != null && !musicaUri.isEmpty()) {
+            try {
+                getContentResolver().openInputStream(Uri.parse(musicaUri)).close();  // Provem accés
+                uri = Uri.parse(musicaUri);  // Si va bé, usem el fitxer personalitzat
+            } catch (Exception e) {
+                Log.w("MainActivity", "No es pot accedir a la música personalitzada, es fa servir loop3.");
+            }
+        }
+
+        // Iniciem la música
+        MusicManager.start(this, uri, R.raw.loop3, volum);
 
         setContentView(R.layout.activity_main);
-        reproduirMusicaAmbVolum();
+
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -120,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
                     Animation.RELATIVE_TO_SELF, 0.5f,
                     Animation.RELATIVE_TO_SELF, 0.5f
             );
+
             SharedPreferences prefsVfx = getSharedPreferences("audio_settings", MODE_PRIVATE);
             float volumVfx = prefsVfx.getInt("volum_vfx", 100) / 100f;
 
@@ -148,6 +166,8 @@ public class MainActivity extends AppCompatActivity {
 
             rotate.setAnimationListener(new Animation.AnimationListener() {
                 @Override public void onAnimationStart(Animation animation) {}
+                @Override public void onAnimationRepeat(Animation animation) {}
+
                 @Override
                 public void onAnimationEnd(Animation animation) {
                     float angleFinal = (360 - (newAngle % 360)) % 360f;
@@ -157,9 +177,7 @@ public class MainActivity extends AppCompatActivity {
                     monedes = aplicarAccio(monedes, accio);
                     monedesText.setText("Monedes: " + monedes);
 
-                    //cridem el so segons el que surti, la funcio esta fora al main
-                    SharedPreferences prefsVfx = getSharedPreferences("audio_settings", MODE_PRIVATE);
-                    float volumVfx = prefsVfx.getInt("volum_vfx", 100) / 100f;
+                    float volumVfx = getSharedPreferences("audio_settings", MODE_PRIVATE).getInt("volum_vfx", 100) / 100f;
 
                     if (accio.contains("+") || accio.contains("*")) {
                         playResultSound(R.raw.monedaguanyada1, volumVfx);
@@ -167,8 +185,6 @@ public class MainActivity extends AppCompatActivity {
                         playResultSound(R.raw.monedaperduda1, volumVfx);
                     }
 
-
-                    //text del que ha surt de les monedes
                     Toast.makeText(MainActivity.this,
                             "Has tocat: " + accio + " → Monedes: " + monedes,
                             Toast.LENGTH_SHORT).show();
@@ -178,9 +194,7 @@ public class MainActivity extends AppCompatActivity {
                         monedaDao.inserirPartida(monedes);
                         spinButton.setEnabled(false);
                         spinButton.setAlpha(0.5f);
-                        // aixo torna al menu principal
                         new Handler().postDelayed(() -> {
-                            // No tornem a inserir la partida aquí
                             findViewById(R.id.menuLayout).setVisibility(View.VISIBLE);
                             monedesText.setVisibility(View.GONE);
                             spinButton.setVisibility(View.GONE);
@@ -193,18 +207,16 @@ public class MainActivity extends AppCompatActivity {
                             spinButton.setEnabled(true);
                             spinButton.setAlpha(1f);
                         }, 2500);
-                        //crida func afegir a calendari
                         afegirEsdevenimentCalendari();
-                        //msg que afegeix a l'usuari
+
                         Intent intent = new Intent(Intent.ACTION_INSERT);
                         intent.setData(CalendarContract.Events.CONTENT_URI);
                         intent.putExtra(CalendarContract.Events.TITLE, "Victòria a la Ruleta!");
                         intent.putExtra(CalendarContract.Events.DESCRIPTION, "Has guanyat amb " + monedes + " monedes 🏆");
                         intent.putExtra(CalendarContract.Events.EVENT_LOCATION, "RuletaApp");
                         intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, System.currentTimeMillis());
-                        intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 60 * 60 * 1000); // 1 hora
+                        intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 60 * 60 * 1000);
                         startActivity(intent);
-
                     }
 
                     if (monedes <= 0) {
@@ -214,7 +226,6 @@ public class MainActivity extends AppCompatActivity {
 
                         mostrarNotificacio("Game Over", "T'has quedat sense monedes 💀");
 
-                        // tornem al menu 3 segons (per donar temps a veure el resultat)
                         new Handler().postDelayed(() -> {
                             findViewById(R.id.menuLayout).setVisibility(View.VISIBLE);
                             monedesText.setVisibility(View.GONE);
@@ -236,7 +247,6 @@ public class MainActivity extends AppCompatActivity {
                         mediaPlayerClick = null;
                     }
                 }
-                @Override public void onAnimationRepeat(Animation animation) {}
             });
 
             rouletteView.startAnimation(rotate);
@@ -247,16 +257,34 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        reproduirMusicaAmbVolum();  // Torna a llegir la configuració del volum
+        SharedPreferences prefsMusica = getSharedPreferences("configuracio_joc", MODE_PRIVATE);
+        String musicaUri = prefsMusica.getString("musica_personalitzada", "");
+        int volumMusica = prefsMusica.getInt("volum_musica", 100);
+        float volum = volumMusica / 100f;
+        Uri uri = musicaUri != null && !musicaUri.isEmpty() ? Uri.parse(musicaUri) : null;
+        MusicManager.start(this, uri, R.raw.loop3, volum);
     }
 
-    //reproduccio del so
+    @Override
+    protected void onPause() {
+        super.onPause();
+        MusicManager.pause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayerClick != null) {
+            mediaPlayerClick.stop();
+            mediaPlayerClick.release();
+        }
+    }
+
     private void playResultSound(int soundResId, float volume) {
         if (mediaPlayerResultat != null) {
             mediaPlayerResultat.release();
             mediaPlayerResultat = null;
         }
-
         try {
             AssetFileDescriptor afd = getResources().openRawResourceFd(soundResId);
             if (afd != null) {
@@ -268,7 +296,6 @@ public class MainActivity extends AppCompatActivity {
                 mediaPlayerResultat.prepare();
                 mediaPlayerResultat.setVolume(volume, volume);
                 mediaPlayerResultat.start();
-
                 mediaPlayerResultat.setOnCompletionListener(mp -> {
                     mp.release();
                     mediaPlayerResultat = null;
@@ -279,89 +306,47 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //notificacions
     private void mostrarNotificacio(String titol, String missatge) {
         NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         String canalId = "canal_ruleta";
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel canal = new NotificationChannel(
-                    canalId,
-                    "Notificacions Ruleta",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
+                    canalId, "Notificacions Ruleta", NotificationManager.IMPORTANCE_HIGH);
             notificationManager.createNotificationChannel(canal);
         }
 
-        // Intent per tornar al menú (MainActivity)
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalId)
-                .setSmallIcon(R.drawable.ic_launcher_foreground) //  es pot posar icona
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle(titol)
                 .setContentText(missatge)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
-                .setContentIntent(pendingIntent); // Aquí!
+                .setContentIntent(pendingIntent);
 
         notificationManager.notify(new Random().nextInt(), builder.build());
     }
 
-    private void reproduirMusicaAmbVolum() {
-        SharedPreferences prefsMusica = getSharedPreferences("configuracio_joc", MODE_PRIVATE);
-        String musicaUri = prefsMusica.getString("musica_personalitzada", null);
-        int volumMusica = prefsMusica.getInt("volum_musica", 100);
-        float volumNormalitzat = volumMusica / 100f;
+    private void afegirEsdevenimentCalendari() {
+        Intent intent = new Intent(Intent.ACTION_INSERT)
+                .setData(CalendarContract.Events.CONTENT_URI)
+                .putExtra(CalendarContract.Events.TITLE, "Victòria a Ruletilla!")
+                .putExtra(CalendarContract.Events.DESCRIPTION, "Has aconseguit el límit de monedes jugant.")
+                .putExtra(CalendarContract.Events.EVENT_LOCATION, "Ruletilla App")
+                .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, System.currentTimeMillis())
+                .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 60 * 60 * 1000);
 
-        try {
-            if (mediaPlayer != null) {
-                mediaPlayer.release();
-                mediaPlayer = null;
-            }
-
-            // Focus d'àudio
-            AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-            int result = audioManager.requestAudioFocus(focusChange -> {}, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-            if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                Log.e("Música", "No s'ha pogut obtenir focus d'àudio.");
-                return;
-            }
-
-            if (musicaUri != null && !musicaUri.isEmpty()) {
-                try {
-                    mediaPlayer = new MediaPlayer();
-                    mediaPlayer.setDataSource(this, Uri.parse(musicaUri));
-                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                    mediaPlayer.setLooping(true);
-                    mediaPlayer.prepare();
-                    Log.d("Música", "Música personalitzada carregada.");
-                } catch (Exception e) {
-                    Log.e("Música", "Error amb la música personalitzada. Carregant loop3.mp3");
-                    if (mediaPlayer != null) {
-                        mediaPlayer.release();
-                    }
-                    mediaPlayer = MediaPlayer.create(this, R.raw.loop3);
-                    mediaPlayer.setLooping(true);
-                }
-            } else {
-                Log.d("Música", "No hi ha música personalitzada. Carregant loop3.mp3");
-                mediaPlayer = MediaPlayer.create(this, R.raw.loop3);
-                mediaPlayer.setLooping(true);
-            }
-
-            if (mediaPlayer != null && volumMusica > 0) {
-                mediaPlayer.setVolume(volumNormalitzat, volumNormalitzat);
-                mediaPlayer.start();
-                Log.d("Música", "Reproducció iniciada.");
-            }
-
-        } catch (Exception e) {
-            Log.e("Música", "Error carregant música: " + e.getMessage());
-            e.printStackTrace();
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "No s'ha trobat cap aplicació de calendari.", Toast.LENGTH_SHORT).show();
         }
     }
+
     private int aplicarAccio(int monedes, String accio) {
         try {
             if (accio.contains("+")) return monedes + Integer.parseInt(accio.substring(1));
@@ -372,39 +357,5 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         return monedes;
-    }
-    private void afegirEsdevenimentCalendari() {
-        Intent intent = new Intent(Intent.ACTION_INSERT)
-                .setData(android.provider.CalendarContract.Events.CONTENT_URI)
-                .putExtra(CalendarContract.Events.TITLE, "Victòria a Ruletilla!")
-                .putExtra(CalendarContract.Events.DESCRIPTION, "Has aconseguit el límit de monedes jugant.")
-                .putExtra(CalendarContract.Events.EVENT_LOCATION, "Ruletilla App")
-                .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, System.currentTimeMillis())
-                .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 60 * 60 * 1000); // 1 hora
-
-        if (intent.resolveActivity(getPackageManager()) != null) {
-            startActivity(intent);
-        } else {
-            Toast.makeText(this, "No s'ha trobat cap aplicació de calendari.", Toast.LENGTH_SHORT).show();
-        }
-    }
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            mediaPlayer.pause();
-        }
-    }
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-        }
-        if (mediaPlayerClick != null) {
-            mediaPlayerClick.stop();
-            mediaPlayerClick.release();
-        }
     }
 }
