@@ -1,22 +1,30 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:layout_marginBottom="8dp">
+    android:padding="12dp">
 
     <TextView
         android:id="@+id/monedesFinalsTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Monedes finals: "
-        android:textSize="16sp" />
+        android:text="Monedes finals: 5"
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/dataTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Data: "
+        android:text="Data: 20/04/2025 14:00"
         android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/textUbicacio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ubicació: --"
+        android:textSize="14sp"
+        android:textColor="#555555" />
 </LinearLayout>

@@ -67,7 +67,20 @@ public class MonedaDao {
             do {
                 int monedes = cursor.getInt(0);
                 String data = cursor.getString(1);
-                historial.add(new HistorialItem(monedes, data));
+
+// Afegim lectura de latitud i longitud
+                double latitud = 0.0;
+                double longitud = 0.0;
+
+                Cursor cursorUbi = db.rawQuery("SELECT latitud, longitud FROM ubicacions ORDER BY timestamp DESC LIMIT 1", null);
+                if (cursorUbi.moveToFirst()) {
+                    latitud = cursorUbi.getDouble(0);
+                    longitud = cursorUbi.getDouble(1);
+                }
+                cursorUbi.close();
+
+                historial.add(new HistorialItem(monedes, data, latitud, longitud));
+
             } while (cursor.moveToNext());
         }
 

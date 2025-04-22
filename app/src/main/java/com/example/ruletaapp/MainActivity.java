@@ -1,9 +1,13 @@
 package com.example.ruletaapp;
+import static androidx.core.content.ContextCompat.getSystemService;
+
 import android.app.PendingIntent;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
+import android.database.sqlite.SQLiteDatabase;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -28,6 +32,14 @@ import android.app.NotificationManager;
 import androidx.core.app.NotificationCompat;
 //aquest import permet fer automaticament fora a l'usuari cap al menu
 import android.os.Handler;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,10 +59,25 @@ public class MainActivity extends AppCompatActivity {
             //"-1", "-2", "/2", "/2", "-3", "-1", "-3", "-3" //valors ruleta per perdre rapid
             "+1", "-2", "*2", "/2", "+3", "-1", "*3", "-3"  // valors normals
     };
+    private static final int REQUEST_LOCATION_PERMISSION = 123;
+    private FusedLocationProviderClient fusedLocationClient;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState); // aixo sempre ha d'anar primer
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+        } else {
+            obtenirUbicacioActual(() -> {});
+        }
+
         //aqui ens assegurem que depenent la versio
         //del mobil usuari, demanem permis per fer que surti NOTIFICACIO
 
@@ -93,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnRetirar.setOnClickListener(v -> {
+            obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes));
             monedaDao.inserirPartida(monedes);
             menuLayout.setVisibility(View.VISIBLE);
             monedesText.setVisibility(View.GONE);
@@ -174,6 +202,7 @@ public class MainActivity extends AppCompatActivity {
                             Toast.LENGTH_SHORT).show();
 
                     if (monedes >= LIMIT_VICTORIA) {
+                        obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes));
                         mostrarNotificacio("Has guanyat!!!", "El teu rècord és de " + monedes + " monedes 🏆");
                         monedaDao.inserirPartida(monedes);
                         spinButton.setEnabled(false);
@@ -208,6 +237,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     if (monedes <= 0) {
+                        obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes));
                         monedaDao.inserirPartida(monedes);
                         spinButton.setEnabled(false);
                         spinButton.setAlpha(0.5f);
@@ -242,6 +272,50 @@ public class MainActivity extends AppCompatActivity {
             rouletteView.startAnimation(rotate);
             currentAngle = newAngle % 360;
         });
+    }
+    private void obtenirUbicacioActual(Runnable despresDeGuardar) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
+                if (location != null) {
+                    double latitud = location.getLatitude();
+                    double longitud = location.getLongitude();
+
+                    Log.d("UBICACIO", "Lat: " + latitud + ", Lon: " + longitud);
+
+                    new UbicacioDao(this).guardarUbicacio(latitud, longitud);
+
+                } else {
+                    Log.w("UBICACIO", "No s'ha pogut obtenir la ubicació");
+                }
+
+                // 🟢 Executa el codi que va després (guardar la partida, etc.)
+                if (despresDeGuardar != null) {
+                    despresDeGuardar.run();
+                }
+            });
+
+        } else {
+            Log.w("UBICACIO", "Permís no concedit");
+            if (despresDeGuardar != null) {
+                despresDeGuardar.run();
+            }
+        }
+    }
+
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permís de localització concedit ✅", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Permís de localització denegat ❌", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     @Override
@@ -388,6 +462,25 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "No s'ha trobat cap aplicació de calendari.", Toast.LENGTH_SHORT).show();
         }
     }
+    private void guardarUbicacio(double latitud, double longitud) {
+        MonedaDatabaseHelper dbHelper = new MonedaDatabaseHelper(this);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("latitud", latitud);
+        values.put("longitud", longitud);
+        values.put("timestamp", System.currentTimeMillis());
+
+        long newRowId = db.insert("ubicacions", null, values);
+        if (newRowId != -1) {
+            Log.d("UBICACIO", "Ubicació guardada amb ID: " + newRowId);
+        } else {
+            Log.e("UBICACIO", "Error en guardar la ubicació");
+        }
+
+        db.close();
+    }
+
     @Override
     protected void onPause() {
         super.onPause();

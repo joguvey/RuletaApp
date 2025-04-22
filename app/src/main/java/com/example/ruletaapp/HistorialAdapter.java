@@ -21,11 +21,15 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
     public static class HistorialViewHolder extends RecyclerView.ViewHolder {
         TextView monedesFinalsTextView;
         TextView dataTextView;
+        TextView textUbicacio;
 
         public HistorialViewHolder(View itemView) {
+
             super(itemView);
             monedesFinalsTextView = itemView.findViewById(R.id.monedesFinalsTextView);
             dataTextView = itemView.findViewById(R.id.dataTextView);
+            textUbicacio = itemView.findViewById(R.id.textUbicacio);
+
         }
     }
 
@@ -40,8 +44,12 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
     @Override
     public void onBindViewHolder(@NonNull HistorialViewHolder holder, int position) {
         HistorialItem item = historialList.get(position);
-        holder.monedesFinalsTextView.setText("Monedes finals: " + item.getMonedesFinals());
+        holder.monedesFinalsTextView.setText("Monedes finals: " + item.getMonedes());
         holder.dataTextView.setText("Data: " + item.getData());
+        double latitud = item.getLatitud();
+        double longitud = item.getLongitud();
+        holder.textUbicacio.setText("Ubicació: " + latitud + ", " + longitud);
+
     }
 
     @Override
