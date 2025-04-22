@@ -49,6 +49,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         double latitud = item.getLatitud();
         double longitud = item.getLongitud();
         holder.textUbicacio.setText("Ubicació: " + latitud + ", " + longitud);
+        holder.textUbicacio.setText("Ubicació: " + latitud + ", " + longitud + "\n" + item.getAdreca());
 
     }
 

@@ -24,6 +24,8 @@
             android:textStyle="bold"
             android:layout_marginBottom="20dp" />
 
+
+
         <Button
             android:id="@+id/btnPuntuaciones"
             android:layout_width="200dp"
@@ -111,6 +113,18 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="20dp"
         android:visibility="gone" />
+    <!-- Botó que apareix només quan es guanya -->
+    <Button
+        android:id="@+id/btnGuardarCaptura"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:text="GUARDAR CAPTURA"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:layout_below="@id/btnRetirar"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="12dp" />
 
 
 </RelativeLayout>

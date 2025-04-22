@@ -2,18 +2,22 @@ package com.example.ruletaapp;
 import static androidx.core.content.ContextCompat.getSystemService;
 
 import android.app.PendingIntent;
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.CalendarContract;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
@@ -25,6 +29,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 //import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.Random;
 //importem notificacions
 import android.app.NotificationChannel;
@@ -65,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
     private double latitudActual = 0.0;
     private double longitudActual = 0.0;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState); // aixo sempre ha d'anar primer
@@ -90,6 +99,16 @@ public class MainActivity extends AppCompatActivity {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
             }
         }
+        // DEMANEM PERMISOS PER ACCEDIR A IMATGES (API 33+) O GUARDAR FITXERS (API < 29)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.READ_MEDIA_IMAGES}, 1001);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1002);
+            }
+        }
 
         MonedaDao monedaDao = new MonedaDao(this);
 
@@ -105,6 +124,9 @@ public class MainActivity extends AppCompatActivity {
         Button btnRetirar = findViewById(R.id.btnRetirar);
         Button btnPuntuaciones = findViewById(R.id.btnPuntuaciones);
         Button btnOpciones = findViewById(R.id.btnOpciones);
+        Button btnGuardarCaptura = findViewById(R.id.btnGuardarCaptura);
+        btnGuardarCaptura.setVisibility(View.GONE);
+        btnGuardarCaptura.setOnClickListener(v -> guardarCapturaPantalla());
 
         btnRetirar.setVisibility(View.GONE);
         monedaImage.setVisibility(View.GONE);
@@ -206,36 +228,40 @@ public class MainActivity extends AppCompatActivity {
                     if (monedes >= LIMIT_VICTORIA) {
                         obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes, latitudActual, longitudActual));
                         mostrarNotificacio("Has guanyat!!!", "El teu rècord és de " + monedes + " monedes 🏆");
+                        btnGuardarCaptura.setVisibility(View.VISIBLE);
                         monedaDao.inserirPartida(monedes, latitudActual, longitudActual);
                         spinButton.setEnabled(false);
                         spinButton.setAlpha(0.5f);
-                        // aixo torna al menu principal
+
+                        // Cridem el calendari DESPRÉS d’uns segons
                         new Handler().postDelayed(() -> {
-                            // No tornem a inserir la partida aquí
+                            // Crida func afegir a calendari
+                            afegirEsdevenimentCalendari();
+
+                            Intent intent = new Intent(Intent.ACTION_INSERT);
+                            intent.setData(CalendarContract.Events.CONTENT_URI);
+                            intent.putExtra(CalendarContract.Events.TITLE, "Victòria a la Ruleta!");
+                            intent.putExtra(CalendarContract.Events.DESCRIPTION, "Has guanyat amb " + monedes + " monedes 🏆");
+                            intent.putExtra(CalendarContract.Events.EVENT_LOCATION, "RuletaApp");
+                            intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, System.currentTimeMillis());
+                            intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 60 * 60 * 1000); // 1 hora
+                            startActivity(intent);
+                        }, 4000); // 4 segons de marge
+
+                        // Tornem al menú principal al cap de 6 segons
+                        new Handler().postDelayed(() -> {
                             findViewById(R.id.menuLayout).setVisibility(View.VISIBLE);
                             monedesText.setVisibility(View.GONE);
                             spinButton.setVisibility(View.GONE);
                             findViewById(R.id.ruletaContainer).setVisibility(View.GONE);
                             findViewById(R.id.btnRetirar).setVisibility(View.GONE);
                             monedaImage.setVisibility(View.GONE);
-
+                            findViewById(R.id.btnGuardarCaptura).setVisibility(View.GONE);
                             monedes = 5;
                             monedesText.setText("Monedes: " + monedes);
                             spinButton.setEnabled(true);
                             spinButton.setAlpha(1f);
-                        }, 2500);
-                        //crida func afegir a calendari
-                        afegirEsdevenimentCalendari();
-                        //msg que afegeix a l'usuari
-                        Intent intent = new Intent(Intent.ACTION_INSERT);
-                        intent.setData(CalendarContract.Events.CONTENT_URI);
-                        intent.putExtra(CalendarContract.Events.TITLE, "Victòria a la Ruleta!");
-                        intent.putExtra(CalendarContract.Events.DESCRIPTION, "Has guanyat amb " + monedes + " monedes 🏆");
-                        intent.putExtra(CalendarContract.Events.EVENT_LOCATION, "RuletaApp");
-                        intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, System.currentTimeMillis());
-                        intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 60 * 60 * 1000); // 1 hora
-                        startActivity(intent);
-
+                        }, 6000);
                     }
 
                     if (monedes <= 0) {
@@ -474,6 +500,44 @@ public class MainActivity extends AppCompatActivity {
         }
 
         db.close();
+    }
+    private void guardarCapturaPantalla() {
+        try {
+            // Captura la vista completa de la pantalla
+            View vista = getWindow().getDecorView().getRootView();
+            vista.setDrawingCacheEnabled(true);
+            Bitmap bitmap = Bitmap.createBitmap(vista.getDrawingCache());
+            vista.setDrawingCacheEnabled(false);
+
+            // Guarda la imatge en el directori Pictures
+            String nomFitxer = "victoria_ruleta_" + System.currentTimeMillis() + ".png";
+            OutputStream fos;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.DISPLAY_NAME, nomFitxer);
+                values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+                values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
+
+                ContentResolver resolver = getContentResolver();
+                Uri uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                fos = resolver.openOutputStream(uri);
+            } else {
+                File directorio = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+                File fitxer = new File(directorio, nomFitxer);
+                fos = new FileOutputStream(fitxer);
+            }
+
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            fos.flush();
+            fos.close();
+
+            Toast.makeText(this, "Captura desada a la galeria 🎉", Toast.LENGTH_LONG).show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error en desar la captura 😢", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override

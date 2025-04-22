@@ -32,8 +32,8 @@ public class MonedaDatabaseHelper extends SQLiteOpenHelper {
             "monedes_finals INTEGER, " +
             "data TEXT, " +
             "latitud REAL, " +
-            "longitud REAL)";
-
+            "longitud REAL, " +
+            "adreca TEXT)";
 
 
     @Override
@@ -53,7 +53,7 @@ public class MonedaDatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MONEDES);
+        db.execSQL("DROP TABLE IF EXISTS historial");
         onCreate(db);
     }
 }
