@@ -62,7 +62,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_LOCATION_PERMISSION = 123;
     private FusedLocationProviderClient fusedLocationClient;
 
-
+    private double latitudActual = 0.0;
+    private double longitudActual = 0.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,8 +121,9 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnRetirar.setOnClickListener(v -> {
-            obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes));
-            monedaDao.inserirPartida(monedes);
+
+            obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes, latitudActual, longitudActual));
+            monedaDao.inserirPartida(monedes, latitudActual, longitudActual);;
             menuLayout.setVisibility(View.VISIBLE);
             monedesText.setVisibility(View.GONE);
             spinButton.setVisibility(View.GONE);
@@ -202,9 +204,9 @@ public class MainActivity extends AppCompatActivity {
                             Toast.LENGTH_SHORT).show();
 
                     if (monedes >= LIMIT_VICTORIA) {
-                        obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes));
+                        obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes, latitudActual, longitudActual));
                         mostrarNotificacio("Has guanyat!!!", "El teu rècord és de " + monedes + " monedes 🏆");
-                        monedaDao.inserirPartida(monedes);
+                        monedaDao.inserirPartida(monedes, latitudActual, longitudActual);
                         spinButton.setEnabled(false);
                         spinButton.setAlpha(0.5f);
                         // aixo torna al menu principal
@@ -237,8 +239,8 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     if (monedes <= 0) {
-                        obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes));
-                        monedaDao.inserirPartida(monedes);
+                        obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes, latitudActual, longitudActual));
+                        monedaDao.inserirPartida(monedes, latitudActual, longitudActual);
                         spinButton.setEnabled(false);
                         spinButton.setAlpha(0.5f);
 
@@ -279,20 +281,13 @@ public class MainActivity extends AppCompatActivity {
 
             fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
                 if (location != null) {
-                    double latitud = location.getLatitude();
-                    double longitud = location.getLongitude();
+                    latitudActual = location.getLatitude();
+                    longitudActual = location.getLongitude();
 
-                    Log.d("UBICACIO", "Lat: " + latitud + ", Lon: " + longitud);
-
-                    new UbicacioDao(this).guardarUbicacio(latitud, longitud);
-
+                    Log.d("UBICACIO", "Lat: " + latitudActual + ", Lon: " + longitudActual);
+                    new UbicacioDao(this).guardarUbicacio(latitudActual, longitudActual);
                 } else {
                     Log.w("UBICACIO", "No s'ha pogut obtenir la ubicació");
-                }
-
-                // 🟢 Executa el codi que va després (guardar la partida, etc.)
-                if (despresDeGuardar != null) {
-                    despresDeGuardar.run();
                 }
             });
 

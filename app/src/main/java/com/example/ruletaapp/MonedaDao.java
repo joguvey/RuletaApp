@@ -19,15 +19,17 @@ public class MonedaDao {
         dbHelper = new MonedaDatabaseHelper(context);
     }
 
-    public void inserirPartida(int monedesFinals) {
+    public void inserirPartida(int monedesFinals, double latitud, double longitud) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
         values.put(MonedaDatabaseHelper.COLUMN_MONEDES_FINALS, monedesFinals);
 
-        // Format de la data
         String data = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
         values.put(MonedaDatabaseHelper.COLUMN_DATA, data);
+
+        values.put("latitud", latitud);
+        values.put("longitud", longitud);
 
         db.insert(MonedaDatabaseHelper.TABLE_HISTORIAL, null, values);
         db.close();
@@ -61,26 +63,17 @@ public class MonedaDao {
     public List<HistorialItem> getHistorial() {
         List<HistorialItem> historial = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT monedes_finals, data FROM historial", null);
+
+        Cursor cursor = db.rawQuery("SELECT monedes_finals, data, latitud, longitud FROM historial ORDER BY id DESC", null);
 
         if (cursor.moveToFirst()) {
             do {
-                int monedes = cursor.getInt(0);
-                String data = cursor.getString(1);
-
-// Afegim lectura de latitud i longitud
-                double latitud = 0.0;
-                double longitud = 0.0;
-
-                Cursor cursorUbi = db.rawQuery("SELECT latitud, longitud FROM ubicacions ORDER BY timestamp DESC LIMIT 1", null);
-                if (cursorUbi.moveToFirst()) {
-                    latitud = cursorUbi.getDouble(0);
-                    longitud = cursorUbi.getDouble(1);
-                }
-                cursorUbi.close();
+                int monedes = cursor.getInt(cursor.getColumnIndexOrThrow("monedes_finals"));
+                String data = cursor.getString(cursor.getColumnIndexOrThrow("data"));
+                double latitud = cursor.getDouble(cursor.getColumnIndexOrThrow("latitud"));
+                double longitud = cursor.getDouble(cursor.getColumnIndexOrThrow("longitud"));
 
                 historial.add(new HistorialItem(monedes, data, latitud, longitud));
-
             } while (cursor.moveToNext());
         }
 

@@ -27,13 +27,12 @@ public class MonedaDatabaseHelper extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
-    private static final String HISTORIAL_CREATE =
-            "CREATE TABLE " + TABLE_HISTORIAL + " (" +
-                    COLUMN_HISTORIAL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    COLUMN_MONEDES_FINALS + " INTEGER, " +
-                    COLUMN_DATA + " TEXT, " +
-                    "latitud REAL, " +
-                    "longitud REAL);";
+    public static final String HISTORIAL_CREATE = "CREATE TABLE historial (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "monedes_finals INTEGER, " +
+            "data TEXT, " +
+            "latitud REAL, " +
+            "longitud REAL)";
 
 
 
@@ -42,7 +41,7 @@ public class MonedaDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(DATABASE_CREATE);
         db.execSQL("INSERT INTO " + TABLE_MONEDES + " VALUES (1, 5)");
 
-        db.execSQL(HISTORIAL_CREATE);
+        db.execSQL(HISTORIAL_CREATE); // Ara conté latitud i longitud
 
         String CREATE_UBICACIONS_TABLE = "CREATE TABLE ubicacions (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -50,8 +49,6 @@ public class MonedaDatabaseHelper extends SQLiteOpenHelper {
                 "longitud REAL," +
                 "timestamp LONG)";
         db.execSQL(CREATE_UBICACIONS_TABLE);
-
-
     }
 
     @Override
