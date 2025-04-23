@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>Ajuda del joc Ruletilla</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 30px;
+            background-color: #ffffff;
+            color: #333;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #e65100;
+            margin-top: 40px;
+        }
+        ul {
+            text-align: left;
+            display: inline-block;
+            margin-top: 20px;
+        }
+        .boto-tornar {
+            margin-top: 40px;
+            margin-bottom: 40px;
+            padding: 12px 24px;
+            background-color: #e65100;
+            color: white;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<h1>Ajuda del joc Ruletilla 🎰</h1>
+<p>Aquí pots trobar com jugar:</p>
+<ul>
+    <li><strong>Prem Jugar</strong> per començar una partida</li>
+    <li><strong>Prem Girar</strong> per fer girar la ruleta</li>
+    <li>Guanya monedes segons el resultat</li>
+    <li>Pots <strong>guardar una captura</strong> si guanyes</li>
+</ul>
+
+<!-- Botó real que crida Android des de la WebView -->
+<button class="boto-tornar" onclick="Android.tornarAlMenu()">← Tornar al joc</button>
+
+<script>
+    function tornarAlJoc() {
+        if (typeof Android !== "undefined" && Android.tornarAlMenu) {
+            Android.tornarAlMenu();
+        }
+    }
+</script>
+</body>
+</html>

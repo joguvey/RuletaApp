@@ -38,4 +38,6 @@
     <string name="lorem_ipsum">Lorem ipsum placeholder text.</string>
     <string name="first_fragment_label">Primer Fragment</string>
     <string name="second_fragment_label">Segon Fragment</string>
+    <string name="btn_ajuda" translatable="false">Ajuda</string>
+
 </resources>

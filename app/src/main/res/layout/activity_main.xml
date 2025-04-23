@@ -37,12 +37,19 @@
             android:layout_height="wrap_content"
             android:text="@string/btn_opcions"
             android:layout_marginBottom="20dp" />
-
+        <Button
+            android:id="@+id/btnAjuda"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_ajuda"
+            android:layout_marginBottom="50dp" />
         <Button
             android:id="@+id/btnSalir"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:text="@string/btn_sortir" />
+
+
     </LinearLayout>
 
     <TextView

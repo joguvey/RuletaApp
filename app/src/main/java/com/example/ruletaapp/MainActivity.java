@@ -159,6 +159,13 @@ public class MainActivity extends AppCompatActivity {
             spinButton.setAlpha(1f);
         });
 
+        //boto ajuda
+        Button btnAjuda = findViewById(R.id.btnAjuda);
+        btnAjuda.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, HelpActivity.class);
+            startActivity(intent);
+        });
+
         btnOpciones.setOnClickListener(v -> startActivity(new Intent(this, OpcionesActivity.class)));
 
         btnSalir.setOnClickListener(v -> finish());
