@@ -300,6 +300,8 @@ public class MainActivity extends AppCompatActivity {
             rouletteView.startAnimation(rotate);
             currentAngle = newAngle % 360;
         });
+        String sortir = getString(R.string.btn_sortir);
+        Log.d("IDIOMA_TEST", "Traducció actual de btn_sortir: " + sortir);
     }
     private void obtenirUbicacioActual(Runnable despresDeGuardar) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)

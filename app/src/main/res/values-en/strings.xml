@@ -1,0 +1,41 @@
+<resources>
+    <!-- Screens and Activities -->
+    <string name="app_name">RuletaApp</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_historial">History</string>
+
+    <!-- Buttons and labels -->
+    <string name="btn_jugar">Play</string>
+    <string name="btn_puntuacions">Scores</string>
+    <string name="btn_opcions">Options</string>
+    <string name="btn_sortir">Exit</string>
+    <string name="btn_spin">Spin!</string>
+    <string name="btn_retirar">Cash Out</string>
+    <string name="btn_guardar_captura">SAVE SCREENSHOT</string>
+    <string name="btn_tornar">Back</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+    <!-- Messages -->
+    <string name="victoria_titol">You won!!!</string>
+    <string name="victoria_missatge">Your record is %1$d coins 🏆</string>
+    <string name="game_over">You’ve run out of coins</string>
+    <string name="missatge_monedes">You got: %1$s ➜ Coins: %2$d</string>
+    <string name="ubicacio_desconeguda">Couldn’t get location</string>
+
+    <!-- History -->
+    <string name="titol_historial">Game History</string>
+    <string name="label_monedes_finals">Final coins: %1$d</string>
+    <string name="label_data">Date: %1$s</string>
+    <string name="label_ubicacio">Location: %1$.4f, %2$.4f</string>
+    <string name="label_adreca">Address: %1$s</string>
+
+    <!-- Calendar notification -->
+    <string name="victoria_calendari_titol">Victory in the Roulette!</string>
+    <string name="victoria_calendari_descripcio">You reached the coin limit while playing.</string>
+
+    <!-- Misc -->
+    <string name="lorem_ipsum">Lorem ipsum placeholder text.</string>
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+</resources>

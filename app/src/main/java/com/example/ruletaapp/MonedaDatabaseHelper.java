@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class MonedaDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "ruletilla.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     public static final String TABLE_MONEDES = "monedes";
     public static final String COLUMN_ID = "_id";
@@ -17,9 +17,8 @@ public class MonedaDatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_MONEDES_FINALS = "monedes_finals";
     public static final String COLUMN_DATA = "data";
 
-
     private static final String DATABASE_CREATE =
-            "CREATE TABLE " + TABLE_MONEDES + " (" +
+            "CREATE TABLE IF NOT EXISTS " + TABLE_MONEDES + " (" +
                     COLUMN_ID + " INTEGER PRIMARY KEY, " +
                     COLUMN_QUANTITAT + " INTEGER);";
 
@@ -35,15 +34,14 @@ public class MonedaDatabaseHelper extends SQLiteOpenHelper {
             "longitud REAL, " +
             "adreca TEXT)";
 
-
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(DATABASE_CREATE);
-        db.execSQL("INSERT INTO " + TABLE_MONEDES + " VALUES (1, 5)");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_MONEDES + " VALUES (1, 5)");
 
-        db.execSQL(HISTORIAL_CREATE); // Ara conté latitud i longitud
+        db.execSQL(HISTORIAL_CREATE);
 
-        String CREATE_UBICACIONS_TABLE = "CREATE TABLE ubicacions (" +
+        String CREATE_UBICACIONS_TABLE = "CREATE TABLE IF NOT EXISTS ubicacions (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "latitud REAL," +
                 "longitud REAL," +
@@ -53,7 +51,10 @@ public class MonedaDatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS historial");
-        onCreate(db);
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE historial ADD COLUMN latitud REAL DEFAULT 0");
+            db.execSQL("ALTER TABLE historial ADD COLUMN longitud REAL DEFAULT 0");
+            db.execSQL("ALTER TABLE historial ADD COLUMN adreca TEXT DEFAULT 'Adreça desconeguda'");
+        }
     }
 }
