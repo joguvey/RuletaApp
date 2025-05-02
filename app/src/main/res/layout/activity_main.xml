@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:background="#FF5722">
+    android:background="@drawable/fons1">
 
     <LinearLayout
         android:id="@+id/menuLayout"

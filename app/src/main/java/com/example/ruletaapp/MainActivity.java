@@ -29,7 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 //import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-
+import android.widget.RelativeLayout;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -134,6 +134,9 @@ public class MainActivity extends AppCompatActivity {
         btnPuntuaciones.setOnClickListener(v -> startActivity(new Intent(this, HistorialActivity.class)));
 
         btnJugar.setOnClickListener(v -> {
+            RelativeLayout rootLayout = findViewById(R.id.rootLayout);
+            rootLayout.setBackgroundResource(R.drawable.fons2);
+
             menuLayout.setVisibility(View.GONE);
             monedesText.setVisibility(View.VISIBLE);
             spinButton.setVisibility(View.VISIBLE);
@@ -152,6 +155,10 @@ public class MainActivity extends AppCompatActivity {
             findViewById(R.id.ruletaContainer).setVisibility(View.GONE);
             btnRetirar.setVisibility(View.GONE);
             monedaImage.setVisibility(View.GONE);
+
+            // tor el fons original
+            RelativeLayout rootLayout = findViewById(R.id.rootLayout);
+            rootLayout.setBackgroundResource(R.drawable.fons1);
 
             monedes = 5;
             monedesText.setText("Monedes: " + monedes);
@@ -240,9 +247,9 @@ public class MainActivity extends AppCompatActivity {
                         spinButton.setEnabled(false);
                         spinButton.setAlpha(0.5f);
 
-                        // Cridem el calendari DESPRÉS d’uns segons
+                        // cridem el calendari DESPRÉS d’uns segons
                         new Handler().postDelayed(() -> {
-                            // Crida func afegir a calendari
+                            // crida func afegir a calendari
                             afegirEsdevenimentCalendari();
 
                             Intent intent = new Intent(Intent.ACTION_INSERT);
@@ -253,9 +260,13 @@ public class MainActivity extends AppCompatActivity {
                             intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, System.currentTimeMillis());
                             intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 60 * 60 * 1000); // 1 hora
                             startActivity(intent);
+                            RelativeLayout rootLayout = findViewById(R.id.rootLayout);
+                            rootLayout.setBackgroundResource(R.drawable.fons1);
                         }, 4000); // 4 segons de marge
 
-                        // Tornem al menú principal al cap de 6 segons
+
+
+                        // tornem al menú principal al cap de 6 segons
                         new Handler().postDelayed(() -> {
                             findViewById(R.id.menuLayout).setVisibility(View.VISIBLE);
                             monedesText.setVisibility(View.GONE);
@@ -268,7 +279,10 @@ public class MainActivity extends AppCompatActivity {
                             monedesText.setText("Monedes: " + monedes);
                             spinButton.setEnabled(true);
                             spinButton.setAlpha(1f);
+                            RelativeLayout rootLayout = findViewById(R.id.rootLayout);
+                            rootLayout.setBackgroundResource(R.drawable.fons1);
                         }, 6000);
+                        // restaura el fons original
                     }
 
                     if (monedes <= 0) {
