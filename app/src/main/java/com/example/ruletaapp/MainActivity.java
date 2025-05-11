@@ -306,6 +306,8 @@ public class MainActivity extends AppCompatActivity {
                             monedesText.setText("Monedes: " + monedes);
                             spinButton.setEnabled(true);
                             spinButton.setAlpha(1f);
+                            RelativeLayout rootLayout = findViewById(R.id.rootLayout);
+                            rootLayout.setBackgroundResource(R.drawable.fons1);
                         }, 3000);
                     }
 
