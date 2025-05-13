@@ -34,4 +34,15 @@ public class HelpActivity extends AppCompatActivity {
             webView.loadUrl("file:///android_asset/ajuda.html"); // català per defecte
         }
     }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        SoundManager.getInstance(this).pauseMusic();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // No reactivem la música aquí per evitar duplicació
+    }
 }

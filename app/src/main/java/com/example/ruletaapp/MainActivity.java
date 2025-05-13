@@ -54,14 +54,16 @@ public class MainActivity extends AppCompatActivity {
     private RouletteView rouletteView;
     private float currentAngle = 0f;
     private final Random random = new Random();
+    private SoundManager soundManager;
     private ImageView monedaImage;
     private int monedes = 5;
     private TextView monedesText;
+    private boolean canviIntern = false;
     private Button spinButton;
     private MediaPlayer mediaPlayer;
     private MediaPlayer mediaPlayerClick;
     private MediaPlayer mediaPlayerResultat; //reproductor per sons de resultat (guanyar o perdre)
-    private static final int LIMIT_VICTORIA = 6;
+    private static final int LIMIT_VICTORIA = 100;
     private final String[] sectors = {
             //"*1", "*2", "*2", "*2", "*3", "*1", "*3", "*3" //valors ruleta per guanyar rapid
             //"-1", "-2", "/2", "/2", "-3", "-1", "-3", "-3" //valors ruleta per perdre rapid
@@ -76,10 +78,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState); // aixo sempre ha d'anar primer
-
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main); // això sempre abans dels findViewById
+        soundManager = SoundManager.getInstance(this);
+        soundManager.playBackgroundMusic(); // només després de setContentView()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
+        // PERMÍS DE LOCALITZACIÓ
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -88,27 +93,30 @@ public class MainActivity extends AppCompatActivity {
             obtenirUbicacioActual(() -> {});
         }
 
-        //aqui ens assegurem que depenent la versio
-        //del mobil usuari, demanem permis per fer que surti NOTIFICACIO
 
-        setContentView(R.layout.activity_main);
-        reproduirMusicaAmbVolum();
+        // PERMÍS PER NOTIFICACIONS (API 33+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
             }
         }
-        // DEMANEM PERMISOS PER ACCEDIR A IMATGES (API 33+) O GUARDAR FITXERS (API < 29)
+
+        // PERMÍS PER ACCEDIR A IMATGES (API 33+) O FITXERS (API < 29)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES)
+                    != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.READ_MEDIA_IMAGES}, 1001);
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1002);
             }
         }
+
+        // A PARTIR D’AQUÍ continuem amb findViewById, listeners, etc.
+
 
         MonedaDao monedaDao = new MonedaDao(this);
 
@@ -131,7 +139,10 @@ public class MainActivity extends AppCompatActivity {
         btnRetirar.setVisibility(View.GONE);
         monedaImage.setVisibility(View.GONE);
 
-        btnPuntuaciones.setOnClickListener(v -> startActivity(new Intent(this, HistorialActivity.class)));
+        btnPuntuaciones.setOnClickListener(v -> {
+            canviIntern = true;
+            startActivity(new Intent(this, HistorialActivity.class));
+        });
 
         btnJugar.setOnClickListener(v -> {
             RelativeLayout rootLayout = findViewById(R.id.rootLayout);
@@ -169,12 +180,15 @@ public class MainActivity extends AppCompatActivity {
         //boto ajuda
         Button btnAjuda = findViewById(R.id.btnAjuda);
         btnAjuda.setOnClickListener(v -> {
+            canviIntern = true;
             Intent intent = new Intent(MainActivity.this, HelpActivity.class);
             startActivity(intent);
         });
 
-        btnOpciones.setOnClickListener(v -> startActivity(new Intent(this, OpcionesActivity.class)));
-
+        btnOpciones.setOnClickListener(v -> {
+            canviIntern = true;
+            startActivity(new Intent(this, OpcionesActivity.class));
+        });
         btnSalir.setOnClickListener(v -> finish());
 
         spinButton.setOnClickListener(v -> {
@@ -189,25 +203,8 @@ public class MainActivity extends AppCompatActivity {
             SharedPreferences prefsVfx = getSharedPreferences("audio_settings", MODE_PRIVATE);
             float volumVfx = prefsVfx.getInt("volum_vfx", 100) / 100f;
 
-            try {
-                if (mediaPlayerClick != null) {
-                    mediaPlayerClick.release();
-                    mediaPlayerClick = null;
-                }
-                AssetFileDescriptor afd = getResources().openRawResourceFd(R.raw.roulette_click);
-                if (afd != null) {
-                    mediaPlayerClick = new MediaPlayer();
-                    mediaPlayerClick.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-                    afd.close();
-                    mediaPlayerClick.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                    mediaPlayerClick.setLooping(true);
-                    mediaPlayerClick.prepare();
-                    mediaPlayerClick.setVolume(volumVfx, volumVfx);
-                    mediaPlayerClick.start();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            soundManager.playClickSound();
+
 
             rotate.setDuration(3000);
             rotate.setFillAfter(true);
@@ -228,9 +225,9 @@ public class MainActivity extends AppCompatActivity {
                     float volumVfx = prefsVfx.getInt("volum_vfx", 100) / 100f;
 
                     if (accio.contains("+") || accio.contains("*")) {
-                        playResultSound(R.raw.monedaguanyada1, volumVfx);
+                        soundManager.playResultSound(R.raw.monedaguanyada1);
                     } else if (accio.contains("-") || accio.contains("/")) {
-                        playResultSound(R.raw.monedaperduda1, volumVfx);
+                        soundManager.playResultSound(R.raw.monedaperduda1);
                     }
 
 
@@ -311,11 +308,7 @@ public class MainActivity extends AppCompatActivity {
                         }, 3000);
                     }
 
-                    if (mediaPlayerClick != null) {
-                        mediaPlayerClick.stop();
-                        mediaPlayerClick.release();
-                        mediaPlayerClick = null;
-                    }
+                    soundManager.stopClickSound();
                 }
                 @Override public void onAnimationRepeat(Animation animation) {}
             });
@@ -364,11 +357,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        reproduirMusicaAmbVolum();  // Torna a llegir la configuració del volum
-    }
 
     //reproduccio del so
     private void playResultSound(int soundResId, float volume) {
@@ -429,59 +417,7 @@ public class MainActivity extends AppCompatActivity {
         notificationManager.notify(new Random().nextInt(), builder.build());
     }
 
-    private void reproduirMusicaAmbVolum() {
-        SharedPreferences prefsMusica = getSharedPreferences("configuracio_joc", MODE_PRIVATE);
-        String musicaUri = prefsMusica.getString("musica_personalitzada", null);
-        int volumMusica = prefsMusica.getInt("volum_musica", 100);
-        float volumNormalitzat = volumMusica / 100f;
 
-        try {
-            if (mediaPlayer != null) {
-                mediaPlayer.release();
-                mediaPlayer = null;
-            }
-
-            // Focus d'àudio
-            AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-            int result = audioManager.requestAudioFocus(focusChange -> {}, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-            if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                Log.e("Música", "No s'ha pogut obtenir focus d'àudio.");
-                return;
-            }
-
-            if (musicaUri != null && !musicaUri.isEmpty()) {
-                try {
-                    mediaPlayer = new MediaPlayer();
-                    mediaPlayer.setDataSource(this, Uri.parse(musicaUri));
-                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                    mediaPlayer.setLooping(true);
-                    mediaPlayer.prepare();
-                    Log.d("Música", "Música personalitzada carregada.");
-                } catch (Exception e) {
-                    Log.e("Música", "Error amb la música personalitzada. Carregant loop3.mp3");
-                    if (mediaPlayer != null) {
-                        mediaPlayer.release();
-                    }
-                    mediaPlayer = MediaPlayer.create(this, R.raw.loop3);
-                    mediaPlayer.setLooping(true);
-                }
-            } else {
-                Log.d("Música", "No hi ha música personalitzada. Carregant loop3.mp3");
-                mediaPlayer = MediaPlayer.create(this, R.raw.loop3);
-                mediaPlayer.setLooping(true);
-            }
-
-            if (mediaPlayer != null && volumMusica > 0) {
-                mediaPlayer.setVolume(volumNormalitzat, volumNormalitzat);
-                mediaPlayer.start();
-                Log.d("Música", "Reproducció iniciada.");
-            }
-
-        } catch (Exception e) {
-            Log.e("Música", "Error carregant música: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
     private int aplicarAccio(int monedes, String accio) {
         try {
             if (accio.contains("+")) return monedes + Integer.parseInt(accio.substring(1));
@@ -568,20 +504,40 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            mediaPlayer.pause();
+        if (!canviIntern) {
+            soundManager.pauseMusic(); // pausa la música si l'app passa a segon pla
         }
+        canviIntern = false;
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        SharedPreferences prefs = getSharedPreferences("configuracio_joc", MODE_PRIVATE);
+        String uriActual = prefs.getString("musica_personalitzada", null);
+        String uriUltim = soundManager.getLastMusicUri();
+
+        if (!soundManager.isPlaying()) {
+            soundManager.playBackgroundMusic();
+        } else if (uriActual != null && !uriActual.equals(uriUltim)) {
+            soundManager.playBackgroundMusic(); // cançó nova seleccionada → la carreguem
+        } else if (!canviIntern) {
+            soundManager.resumeMusic(); // només si venim de fora de l'app
+        }
+
+        canviIntern = false; // restablim l'estat
     }
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-        }
-        if (mediaPlayerClick != null) {
-            mediaPlayerClick.stop();
-            mediaPlayerClick.release();
+        SoundManager.getInstance(this).releaseAll();
+    }
+    protected void onStop() {
+        super.onStop();
+        if (soundManager != null) {
+            soundManager.pauseMusic();  // o stopMusic() si vols aturar completament
         }
     }
 }

@@ -31,7 +31,11 @@ public class OpcionesActivity extends AppCompatActivity {
                 if (uri != null) {
                     prefsMusica.edit().putString(CLAU_MUSICA, uri.toString()).apply();
                     Toast.makeText(this, "Música seleccionada!", Toast.LENGTH_SHORT).show();
+
+                    SoundManager.getInstance(this).playBackgroundMusic(); // ← afegeix aquesta línia
                 }
+
+
             });
 
     @Override
@@ -58,7 +62,11 @@ public class OpcionesActivity extends AppCompatActivity {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 prefsMusica.edit().putInt("volum_musica", progress).apply();
                 txtVolum.setText("Volum música: " + progress + "%");
+
+                float volum = progress / 100f;
+                SoundManager.getInstance(OpcionesActivity.this).setVolume(volum);  // 🎯 APLICA el volum a temps real
             }
+
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
