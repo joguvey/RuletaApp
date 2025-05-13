@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "857827125428",
+    "project_id": "ruletillaapp",
+    "storage_bucket": "ruletillaapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857827125428:android:12c660d9ff448015de0fe1",
+        "android_client_info": {
+          "package_name": "com.example.ruletaapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "857827125428-iilc6s3jrnl699tu25gagndaci8ok6dh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ruletaapp",
+            "certificate_hash": "d0c4fe7697237a95d7b855a3b2b3189b6431448f"
+          }
+        },
+        {
+          "client_id": "857827125428-tuvd7vjq57utjgl5vl1s5g0pceciik2b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcYpGxCKxp6fZpWtSqGUDzOzgB8ZDJYy4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "857827125428-tuvd7vjq57utjgl5vl1s5g0pceciik2b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

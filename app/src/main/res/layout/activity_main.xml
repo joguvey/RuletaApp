@@ -7,6 +7,8 @@
     tools:context=".MainActivity"
     android:background="@drawable/fons1">
 
+
+
     <LinearLayout
         android:id="@+id/menuLayout"
         android:layout_width="match_parent"
@@ -42,15 +44,31 @@
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:text="@string/btn_ajuda"
-            android:layout_marginBottom="50dp" />
+            android:layout_marginBottom="20dp" />
+        <Button
+            android:id="@+id/btnLogin"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Inicia sessió amb Google"
+            android:layout_marginBottom="20dp"/>
         <Button
             android:id="@+id/btnSalir"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:text="@string/btn_sortir" />
+            android:text="@string/btn_sortir"
+            android:layout_marginBottom="2dp"/>
 
-
+        <TextView
+            android:id="@+id/txtUsuari"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hola!"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_centerHorizontal="true"
+            android:textColor="@android:color/black"/>
     </LinearLayout>
+
 
     <TextView
         android:id="@+id/monedesText"
@@ -129,4 +147,6 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="20dp"
         android:layout_marginBottom="12dp" />
+
+
 </RelativeLayout>

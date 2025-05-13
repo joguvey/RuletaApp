@@ -39,5 +39,6 @@
     <string name="first_fragment_label">Primer Fragment</string>
     <string name="second_fragment_label">Segon Fragment</string>
     <string name="btn_ajuda" translatable="false">Ajuda</string>
+    <string name="default_web_client_id">857827125428-iilc6s3jrnl699tu25gagndaci8ok6dh.apps.googleusercontent.com</string>
 
 </resources>
