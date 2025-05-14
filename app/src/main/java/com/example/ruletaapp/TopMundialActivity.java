@@ -1,7 +1,9 @@
 package com.example.ruletaapp;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,6 +32,9 @@ public class TopMundialActivity extends AppCompatActivity {
 
         adapter = new TopPuntuacionsAdapter(llista);
         recycler.setAdapter(adapter);
+
+        Button btnTornar = findViewById(R.id.btnTornarTop);
+        btnTornar.setOnClickListener(v -> finish());
 
         carregarTopPuntuacions();
     }

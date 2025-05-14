@@ -18,8 +18,9 @@ public class MonedaDao {
 
     private final MonedaDatabaseHelper dbHelper;
     private final Context context;
+
     public MonedaDao(Context context) {
-        this.context = context; // Guarda el context
+        this.context = context;
         dbHelper = new MonedaDatabaseHelper(context);
     }
 
@@ -34,7 +35,7 @@ public class MonedaDao {
         values.put("latitud", latitud);
         values.put("longitud", longitud);
 
-        // adreça amb nom
+        // Obtenir adreça textual
         Geocoder geocoder = new Geocoder(context, Locale.getDefault());
         String adreca = "Adreça desconeguda";
         try {
@@ -45,6 +46,7 @@ public class MonedaDao {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         values.put("adreca", adreca);
 
         db.insert(MonedaDatabaseHelper.TABLE_HISTORIAL, null, values);
@@ -76,26 +78,35 @@ public class MonedaDao {
         return historial;
     }
 
-    public List<HistorialItem> getHistorial() {
+    public List<Puntuacio> getHistorial() {
         List<Puntuacio> historial = new ArrayList<>();
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT email, monedes, timestamp FROM Historial ORDER BY timestamp DESC", null);
 
-        if (cursor != null && cursor.moveToFirst()) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM " + MonedaDatabaseHelper.TABLE_HISTORIAL, null);
+
+        if (cursor.moveToFirst()) {
             do {
-                String email = cursor.getString(cursor.getColumnIndexOrThrow("email"));
-                long monedes = cursor.getLong(cursor.getColumnIndexOrThrow("monedes"));
-                long timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("timestamp"));
-                historial.add(new Puntuacio(email, monedes, timestamp));
+                // Email opcional
+                String email = "";
+                int emailIndex = cursor.getColumnIndex("email");
+                if (emailIndex != -1) {
+                    email = cursor.getString(emailIndex);
+                }
+
+                int monedes = cursor.getInt(cursor.getColumnIndexOrThrow(MonedaDatabaseHelper.COLUMN_MONEDES_FINALS));
+                String data = cursor.getString(cursor.getColumnIndexOrThrow(MonedaDatabaseHelper.COLUMN_DATA));
+                double latitud = cursor.getDouble(cursor.getColumnIndexOrThrow("latitud"));
+                double longitud = cursor.getDouble(cursor.getColumnIndexOrThrow("longitud"));
+                String adreca = cursor.getString(cursor.getColumnIndexOrThrow("adreca"));
+
+                Puntuacio puntuacio = new Puntuacio(email, monedes, data, latitud, longitud, adreca);
+                historial.add(puntuacio);
             } while (cursor.moveToNext());
-            cursor.close();
         }
 
+        cursor.close();
         db.close();
+
         return historial;
     }
-
-
-
-
 }

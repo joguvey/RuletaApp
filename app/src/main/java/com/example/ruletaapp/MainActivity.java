@@ -27,7 +27,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -99,6 +99,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         FirebaseApp.initializeApp(this);
         setContentView(R.layout.activity_main); // això sempre abans dels findViewById
+
         soundManager = SoundManager.getInstance(this);
         soundManager.playBackgroundMusic(); // només després de setContentView()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -245,8 +246,6 @@ public class MainActivity extends AppCompatActivity {
             float volumVfx = prefsVfx.getInt("volum_vfx", 100) / 100f;
 
             soundManager.playClickSound();
-
-
             rotate.setDuration(3000);
             rotate.setFillAfter(true);
 
@@ -261,7 +260,6 @@ public class MainActivity extends AppCompatActivity {
                     monedes = aplicarAccio(monedes, accio);
                     monedesText.setText("Monedes: " + monedes);
 
-                    //cridem el so segons el que surti, la funcio esta fora al main
                     SharedPreferences prefsVfx = getSharedPreferences("audio_settings", MODE_PRIVATE);
                     float volumVfx = prefsVfx.getInt("volum_vfx", 100) / 100f;
 
@@ -271,58 +269,17 @@ public class MainActivity extends AppCompatActivity {
                         soundManager.playResultSound(R.raw.monedaperduda1);
                     }
 
-
-                    //text del que ha surt de les monedes
                     Toast.makeText(MainActivity.this,
                             "Has tocat: " + accio + " → Monedes: " + monedes,
                             Toast.LENGTH_SHORT).show();
 
                     if (monedes >= LIMIT_VICTORIA) {
                         obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes, latitudActual, longitudActual));
+
+                        // ✅ GUARDAR AL FIRESTORE USANT HELPER
+                        FirestoreHelper fHelper = new FirestoreHelper(MainActivity.this);
                         FirebaseUser usuari = FirebaseAuth.getInstance().getCurrentUser();
-                        if (usuari != null) {
-                            String email = usuari.getEmail();
-
-                            Map<String, Object> puntuacio = new HashMap<>();
-                            puntuacio.put("email", email);
-                            puntuacio.put("monedes", monedes);
-                            puntuacio.put("timestamp", System.currentTimeMillis());
-
-                            FirebaseFirestore db = FirebaseFirestore.getInstance();
-                            db.collection("puntuacions")
-                                    .whereEqualTo("email", email)
-                                    .get()
-                                    .addOnSuccessListener(querySnapshot -> {
-                                        boolean actualitzar = true;
-
-                                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                                            Long puntuacioActual = doc.getLong("monedes");
-                                            if (puntuacioActual != null && puntuacioActual >= monedes) {
-                                                actualitzar = false;
-                                                break;
-                                            } else {
-                                                doc.getReference().delete(); // opcional: elimina la puntuació anterior
-                                            }
-                                        }
-
-                                        if (actualitzar) {
-                                            db.collection("puntuacions")
-                                                    .add(puntuacio)
-                                                    .addOnSuccessListener(docRef -> {
-                                                        Log.d("FIREBASE", "Nova puntuació guardada amb ID: " + docRef.getId());
-                                                    })
-                                                    .addOnFailureListener(e -> {
-                                                        Log.e("FIREBASE", "Error guardant nova puntuació", e);
-                                                    });
-                                        } else {
-                                            Log.d("FIREBASE", "Puntuació NO guardada, ja n’hi ha una igual o millor");
-                                        }
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        Log.e("FIREBASE", "Error accedint a puntuacions", e);
-                                    });
-
-                        }
+                        if (usuari != null) fHelper.desarPuntuacio(usuari.getEmail(), monedes);
 
                         mostrarNotificacio("Has guanyat!!!", "El teu rècord és de " + monedes + " monedes 🏆");
                         btnGuardarCaptura.setVisibility(View.VISIBLE);
@@ -330,9 +287,7 @@ public class MainActivity extends AppCompatActivity {
                         spinButton.setEnabled(false);
                         spinButton.setAlpha(0.5f);
 
-                        // cridem el calendari DESPRÉS d’uns segons
                         new Handler().postDelayed(() -> {
-                            // crida func afegir a calendari
                             afegirEsdevenimentCalendari();
 
                             Intent intent = new Intent(Intent.ACTION_INSERT);
@@ -341,15 +296,12 @@ public class MainActivity extends AppCompatActivity {
                             intent.putExtra(CalendarContract.Events.DESCRIPTION, "Has guanyat amb " + monedes + " monedes 🏆");
                             intent.putExtra(CalendarContract.Events.EVENT_LOCATION, "RuletaApp");
                             intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, System.currentTimeMillis());
-                            intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 60 * 60 * 1000); // 1 hora
+                            intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 60 * 60 * 1000);
                             startActivity(intent);
                             RelativeLayout rootLayout = findViewById(R.id.rootLayout);
                             rootLayout.setBackgroundResource(R.drawable.fons1);
-                        }, 4000); // 4 segons de marge
+                        }, 4000);
 
-
-
-                        // tornem al menú principal al cap de 6 segons
                         new Handler().postDelayed(() -> {
                             findViewById(R.id.menuLayout).setVisibility(View.VISIBLE);
                             monedesText.setVisibility(View.GONE);
@@ -365,7 +317,6 @@ public class MainActivity extends AppCompatActivity {
                             RelativeLayout rootLayout = findViewById(R.id.rootLayout);
                             rootLayout.setBackgroundResource(R.drawable.fons1);
                         }, 6000);
-                        // restaura el fons original
                     }
 
                     if (monedes <= 0) {
@@ -376,7 +327,6 @@ public class MainActivity extends AppCompatActivity {
 
                         mostrarNotificacio("Game Over", "T'has quedat sense monedes 💀");
 
-                        // tornem al menu 3 segons (per donar temps a veure el resultat)
                         new Handler().postDelayed(() -> {
                             findViewById(R.id.menuLayout).setVisibility(View.VISIBLE);
                             monedesText.setVisibility(View.GONE);
@@ -402,6 +352,7 @@ public class MainActivity extends AppCompatActivity {
             rouletteView.startAnimation(rotate);
             currentAngle = newAngle % 360;
         });
+
         String sortir = getString(R.string.btn_sortir);
         Log.d("IDIOMA_TEST", "Traducció actual de btn_sortir: " + sortir);
     }

@@ -34,7 +34,7 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
         holder.txtEmail.setText(puntuacio.getEmail());
         holder.txtMonedes.setText("Monedes: " + puntuacio.getMonedes());
 
-        // Formata la data
+        // Format de data per mostrar
         Date data = new Date(puntuacio.getTimestamp());
         SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
         holder.txtData.setText(format.format(data));

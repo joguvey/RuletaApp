@@ -8,11 +8,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class TopPuntuacionsAdapter extends RecyclerView.Adapter<TopPuntuacionsAdapter.ViewHolder> {
 
-    private List<Puntuacio> llista;
+    private final List<Puntuacio> llista;
 
     public TopPuntuacionsAdapter(List<Puntuacio> llista) {
         this.llista = llista;
@@ -30,7 +33,15 @@ public class TopPuntuacionsAdapter extends RecyclerView.Adapter<TopPuntuacionsAd
         Puntuacio p = llista.get(position);
         holder.txtEmail.setText(p.getEmail());
         holder.txtMonedes.setText("Monedes: " + p.getMonedes());
-        holder.txtData.setText("Timestamp: " + p.getTimestamp()); // o formatat si vols
+
+        try {
+            long millis = p.getTimestamp(); // ja és long
+            Date date = new Date(millis);
+            SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            holder.txtData.setText(format.format(date));
+        } catch (Exception e) {
+            holder.txtData.setText(String.valueOf(p.getTimestamp())); // fallback
+        }
     }
 
     @Override
