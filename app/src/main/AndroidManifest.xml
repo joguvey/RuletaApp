@@ -38,7 +38,7 @@
             android:exported="false"
             android:label="Opciones"
             android:theme="@style/Theme.RuletaApp" />
-
+        <activity android:name=".TopMundialActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

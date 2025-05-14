@@ -1,5 +1,6 @@
 package com.example.ruletaapp;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 
@@ -25,6 +26,13 @@ public class HistorialActivity extends AppCompatActivity {
 
         Button btnTornar = findViewById(R.id.btnTornar);
         btnTornar.setOnClickListener(v -> finish());
+
+        // 🔹 BOTÓ TOP MUNDIAL
+        Button btnTopMundial = findViewById(R.id.btnTopMundial);
+        btnTopMundial.setOnClickListener(v -> {
+            Intent intent = new Intent(HistorialActivity.this, TopMundialActivity.class);
+            startActivity(intent);
+        });
 
         monedaDao = new MonedaDao(this);
 

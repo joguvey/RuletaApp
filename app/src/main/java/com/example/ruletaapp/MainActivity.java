@@ -41,6 +41,8 @@ import android.widget.RelativeLayout;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 //importem notificacions
 import android.app.NotificationChannel;
@@ -59,6 +61,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -77,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
     private MediaPlayer mediaPlayerClick;
     private MediaPlayer mediaPlayerResultat; //reproductor per sons de resultat (guanyar o perdre)
-    private static final int LIMIT_VICTORIA = 100;
+    private static final int LIMIT_VICTORIA = 6;
     private final String[] sectors = {
             //"*1", "*2", "*2", "*2", "*3", "*1", "*3", "*3" //valors ruleta per guanyar rapid
             //"-1", "-2", "/2", "/2", "-3", "-1", "-3", "-3" //valors ruleta per perdre rapid
@@ -192,7 +195,18 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnRetirar.setOnClickListener(v -> {
+            FirebaseUser usuari = FirebaseAuth.getInstance().getCurrentUser();
+            if (usuari != null) {
+                String email = usuari.getEmail();
+                long timestamp = System.currentTimeMillis();
+                Puntuacio puntuacio = new Puntuacio(email, monedes, timestamp);
 
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                db.collection("puntuacions")
+                        .add(puntuacio)
+                        .addOnSuccessListener(documentReference -> Log.d("FIRESTORE", "Puntuació pujada correctament"))
+                        .addOnFailureListener(e -> Log.e("FIRESTORE", "Error pujant la puntuació", e));
+            }
             obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes, latitudActual, longitudActual));
             monedaDao.inserirPartida(monedes, latitudActual, longitudActual);;
             menuLayout.setVisibility(View.VISIBLE);
@@ -280,6 +294,19 @@ public class MainActivity extends AppCompatActivity {
                         monedaDao.inserirPartida(monedes, latitudActual, longitudActual);
                         spinButton.setEnabled(false);
                         spinButton.setAlpha(0.5f);
+
+                        FirebaseUser usuari = FirebaseAuth.getInstance().getCurrentUser();
+                        if (usuari != null) {
+                            String email = usuari.getEmail();
+                            long timestamp = System.currentTimeMillis();
+                            Puntuacio puntuacio = new Puntuacio(email, monedes, timestamp);
+
+                            FirebaseFirestore db = FirebaseFirestore.getInstance();
+                            db.collection("puntuacions")
+                                    .add(puntuacio)
+                                    .addOnSuccessListener(documentReference -> Log.d("FIRESTORE", "Puntuació pujada correctament"))
+                                    .addOnFailureListener(e -> Log.e("FIRESTORE", "Error pujant la puntuació", e));
+                        }
 
                         // cridem el calendari DESPRÉS d’uns segons
                         new Handler().postDelayed(() -> {
