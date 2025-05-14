@@ -77,24 +77,25 @@ public class MonedaDao {
     }
 
     public List<HistorialItem> getHistorial() {
-        List<HistorialItem> historial = new ArrayList<>();
+        List<Puntuacio> historial = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT email, monedes, timestamp FROM Historial ORDER BY timestamp DESC", null);
 
-        Cursor cursor = db.rawQuery("SELECT monedes_finals, data, latitud, longitud, adreca FROM historial", null);
-        if (cursor.moveToFirst()) {
+        if (cursor != null && cursor.moveToFirst()) {
             do {
-                int monedes = cursor.getInt(0);
-                String data = cursor.getString(1);
-                double latitud = cursor.getDouble(2);
-                double longitud = cursor.getDouble(3);
-                String adreca = cursor.getString(4);
-
-                historial.add(new HistorialItem(monedes, data, latitud, longitud, adreca));
+                String email = cursor.getString(cursor.getColumnIndexOrThrow("email"));
+                long monedes = cursor.getLong(cursor.getColumnIndexOrThrow("monedes"));
+                long timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("timestamp"));
+                historial.add(new Puntuacio(email, monedes, timestamp));
             } while (cursor.moveToNext());
+            cursor.close();
         }
 
-        cursor.close();
         db.close();
         return historial;
     }
+
+
+
+
 }

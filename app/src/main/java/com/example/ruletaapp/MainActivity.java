@@ -41,6 +41,8 @@ import android.widget.RelativeLayout;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 //importem notificacions
 import android.app.NotificationChannel;
@@ -59,6 +61,8 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -275,6 +279,51 @@ public class MainActivity extends AppCompatActivity {
 
                     if (monedes >= LIMIT_VICTORIA) {
                         obtenirUbicacioActual(() -> monedaDao.inserirPartida(monedes, latitudActual, longitudActual));
+                        FirebaseUser usuari = FirebaseAuth.getInstance().getCurrentUser();
+                        if (usuari != null) {
+                            String email = usuari.getEmail();
+
+                            Map<String, Object> puntuacio = new HashMap<>();
+                            puntuacio.put("email", email);
+                            puntuacio.put("monedes", monedes);
+                            puntuacio.put("timestamp", System.currentTimeMillis());
+
+                            FirebaseFirestore db = FirebaseFirestore.getInstance();
+                            db.collection("puntuacions")
+                                    .whereEqualTo("email", email)
+                                    .get()
+                                    .addOnSuccessListener(querySnapshot -> {
+                                        boolean actualitzar = true;
+
+                                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                                            Long puntuacioActual = doc.getLong("monedes");
+                                            if (puntuacioActual != null && puntuacioActual >= monedes) {
+                                                actualitzar = false;
+                                                break;
+                                            } else {
+                                                doc.getReference().delete(); // opcional: elimina la puntuació anterior
+                                            }
+                                        }
+
+                                        if (actualitzar) {
+                                            db.collection("puntuacions")
+                                                    .add(puntuacio)
+                                                    .addOnSuccessListener(docRef -> {
+                                                        Log.d("FIREBASE", "Nova puntuació guardada amb ID: " + docRef.getId());
+                                                    })
+                                                    .addOnFailureListener(e -> {
+                                                        Log.e("FIREBASE", "Error guardant nova puntuació", e);
+                                                    });
+                                        } else {
+                                            Log.d("FIREBASE", "Puntuació NO guardada, ja n’hi ha una igual o millor");
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.e("FIREBASE", "Error accedint a puntuacions", e);
+                                    });
+
+                        }
+
                         mostrarNotificacio("Has guanyat!!!", "El teu rècord és de " + monedes + " monedes 🏆");
                         btnGuardarCaptura.setVisibility(View.VISIBLE);
                         monedaDao.inserirPartida(monedes, latitudActual, longitudActual);

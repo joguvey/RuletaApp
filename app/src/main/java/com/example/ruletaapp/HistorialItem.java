@@ -5,13 +5,6 @@ public class HistorialItem {
     private String data;
     private double latitud;
     private double longitud;
-
-    public HistorialItem(int monedes, String data, double latitud, double longitud) {
-        this.monedes = monedes;
-        this.data = data;
-        this.latitud = latitud;
-        this.longitud = longitud;
-    }
     private String adreca;
 
     public HistorialItem(int monedes, String data, double latitud, double longitud, String adreca) {
@@ -20,10 +13,6 @@ public class HistorialItem {
         this.latitud = latitud;
         this.longitud = longitud;
         this.adreca = adreca;
-    }
-
-    public String getAdreca() {
-        return adreca;
     }
 
     public int getMonedes() {
@@ -42,4 +31,7 @@ public class HistorialItem {
         return longitud;
     }
 
+    public String getAdreca() {
+        return adreca;
+    }
 }

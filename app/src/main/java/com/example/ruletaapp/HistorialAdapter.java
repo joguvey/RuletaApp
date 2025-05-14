@@ -8,53 +8,51 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.HistorialViewHolder> {
 
-    private List<HistorialItem> historialList;
+    private final List<Puntuacio> llistaPuntuacions;
 
-    public HistorialAdapter(List<HistorialItem> historialList) {
-        this.historialList = historialList;
-    }
-
-    public static class HistorialViewHolder extends RecyclerView.ViewHolder {
-        TextView monedesFinalsTextView;
-        TextView dataTextView;
-        TextView textUbicacio;
-
-        public HistorialViewHolder(View itemView) {
-
-            super(itemView);
-            monedesFinalsTextView = itemView.findViewById(R.id.monedesFinalsTextView);
-            dataTextView = itemView.findViewById(R.id.dataTextView);
-            textUbicacio = itemView.findViewById(R.id.textUbicacio);
-
-        }
+    public HistorialAdapter(List<Puntuacio> llistaPuntuacions) {
+        this.llistaPuntuacions = llistaPuntuacions;
     }
 
     @NonNull
     @Override
     public HistorialViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_historial, parent, false);
-        return new HistorialViewHolder(view);
+        View vista = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_historial, parent, false);
+        return new HistorialViewHolder(vista);
     }
 
     @Override
     public void onBindViewHolder(@NonNull HistorialViewHolder holder, int position) {
-        HistorialItem item = historialList.get(position);
-        holder.monedesFinalsTextView.setText("Monedes finals: " + item.getMonedes());
-        holder.dataTextView.setText("Data: " + item.getData());
-        double latitud = item.getLatitud();
-        double longitud = item.getLongitud();
-        holder.textUbicacio.setText("Ubicació: " + latitud + ", " + longitud);
-        holder.textUbicacio.setText("Ubicació: " + latitud + ", " + longitud + "\n" + item.getAdreca());
+        Puntuacio puntuacio = llistaPuntuacions.get(position);
+        holder.txtEmail.setText(puntuacio.getEmail());
+        holder.txtMonedes.setText("Monedes: " + puntuacio.getMonedes());
 
+        // Formata la data
+        Date data = new Date(puntuacio.getTimestamp());
+        SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+        holder.txtData.setText(format.format(data));
     }
 
     @Override
     public int getItemCount() {
-        return historialList.size();
+        return llistaPuntuacions.size();
+    }
+
+    public static class HistorialViewHolder extends RecyclerView.ViewHolder {
+        TextView txtEmail, txtMonedes, txtData;
+
+        public HistorialViewHolder(@NonNull View itemView) {
+            super(itemView);
+            txtEmail = itemView.findViewById(R.id.txtEmail);
+            txtMonedes = itemView.findViewById(R.id.txtMonedes);
+            txtData = itemView.findViewById(R.id.txtData);
+        }
     }
 }

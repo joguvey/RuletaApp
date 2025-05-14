@@ -5,14 +5,14 @@
     android:orientation="vertical"
     android:padding="12dp"
     android:background="@android:color/white"
-    android:layout_marginBottom="8dp"
-    android:elevation="2dp">
+    android:layout_margin="8dp"
+    android:elevation="4dp">
 
     <TextView
         android:id="@+id/txtEmail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Email"
+        android:text="Correu electrònic"
         android:textStyle="bold"
         android:textSize="16sp" />
 
@@ -22,12 +22,4 @@
         android:layout_height="wrap_content"
         android:text="Monedes: 0"
         android:textSize="14sp" />
-
-    <TextView
-        android:id="@+id/txtData"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Data: --"
-        android:textSize="14sp" />
-
 </LinearLayout>
