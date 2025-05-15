@@ -4,24 +4,20 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.LifecycleOwner;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-
 import java.util.ArrayList;
 import java.util.List;
+
 
 public class TopMundialActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private TopPuntuacionsAdapter adapter;
     private List<Puntuacio> topPuntuacions = new ArrayList<>();
-    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,29 +33,34 @@ public class TopMundialActivity extends AppCompatActivity {
         Button btnTornar = findViewById(R.id.btnTornarTop);
         btnTornar.setOnClickListener(v -> finish());
 
-        db = FirebaseFirestore.getInstance();
-
-        carregarTopPuntuacions();
+        carregarTopPuntuacionsAmbRest();
     }
 
-    private void carregarTopPuntuacions() {
-        db.collection("puntuacions")
-                .orderBy("monedes", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .limit(10)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    topPuntuacions.clear();
-                    for (QueryDocumentSnapshot doc : querySnapshot) {
-                        String email = doc.getString("email");
-                        long monedes = doc.getLong("monedes");
-                        long timestamp = doc.getLong("timestamp");
-                        topPuntuacions.add(new Puntuacio(email, (int) monedes, timestamp));
-                    }
-                    adapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error carregant puntuacions", Toast.LENGTH_SHORT).show();
-                    Log.e("FIRESTORE", "Error", e);
+    private void carregarTopPuntuacionsAmbRest() {
+        new Thread(() -> {
+            try {
+                FirestoreResponse resposta = RetrofitClient.getApi().getPuntuacionsFirestore().execute().body();
+                if (resposta != null) {
+                    List<Puntuacio> llista = FirestoreMapper.convertirResposta(resposta);
+
+                    runOnUiThread(() -> {
+                        topPuntuacions.clear();
+                        topPuntuacions.addAll(llista);
+                        adapter.notifyDataSetChanged();
+                    });
+                } else {
+                    runOnUiThread(() ->
+                            Toast.makeText(this, "Resposta buida de Firebase", Toast.LENGTH_SHORT).show()
+                    );
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Error carregant puntuacions REST", Toast.LENGTH_SHORT).show();
+                    Log.e("RETROFIT", "Error REST", e);
                 });
+            }
+        }).start();
     }
+
 }
