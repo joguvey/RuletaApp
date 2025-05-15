@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "857827125428-hvquh6jo5kif76srkcht2840q3to6nlo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ruletaapp",
+            "certificate_hash": "3f1a88a6163fb9be5b805e807f943bf784746e7d"
+          }
+        },
+        {
           "client_id": "857827125428-iilc6s3jrnl699tu25gagndaci8ok6dh.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
